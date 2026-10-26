@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Steer a live NVIDIA Cosmos3 Nano Sim Bimanual world model in your browser with your own Reactor API key.">
+  <title>Cosmos Bimanual — a learned manipulation world</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><span>C</span><sup>3</sup></span>
+        <span class="brand-copy">
+          <strong>Cosmos Bimanual</strong>
+          <small>a learned manipulation world</small>
+        </span>
+      </div>
+      <div class="topbar-meta">
+        <div class="meta-block"><span>checkpoint</span><b>cosmos3-nano-sim-bimanual</b></div>
+        <div class="meta-block"><span>compute</span><b>NVIDIA B200 × 1</b></div>
+        <button class="ghost-btn key-btn" id="keyBtn" type="button"><i aria-hidden="true"></i><span id="keyLabel">Add API key</span></button>
+        <div class="status-chip is-idle" id="statusChip"><i></i><span id="statusText">Idle</span></div>
+        <button class="ghost-btn" id="aboutBtn" type="button">Info</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="stage-column">
+        <div class="stage" id="stage">
+          <img class="scene-preview" id="scenePreview" src="./agibot.png" alt="Starting frame of the AgiBot scene">
+          <video class="scene-video" id="worldVideo" autoplay muted playsinline aria-label="Live generated robot world"></video>
+          <div class="scanline" id="scanline" aria-hidden="true"></div>
+          <div class="stage-chrome" aria-hidden="true">
+            <span class="corner tl"></span><span class="corner tr"></span>
+            <span class="corner bl"></span><span class="corner br"></span>
+          </div>
+          <div class="stage-hud top-hud">
+            <div class="hud-group">
+              <span id="resolutionReadout">—</span>
+              <span id="stepReadout">step 000</span>
+            </div>
+            <div class="hud-group right">
+              <span id="sessionReadout">00:00 · $0.000</span>
+              <span id="clientFps">0.0 fps</span>
+              <span id="latencyReadout">browser link</span>
+            </div>
+          </div>
+          <div class="stage-hud bottom-hud">
+            <div class="arm-hud">
+              <span class="arm-tag">L</span>
+              <div class="arm-hud-copy">
+                <b id="leftHudPos">0.00&nbsp;&nbsp;0.00&nbsp;&nbsp;0.00</b>
+                <span class="bar"><i id="leftHudGrip"></i></span>
+              </div>
+            </div>
+            <div class="arm-hud right">
+              <span class="arm-tag">R</span>
+              <div class="arm-hud-copy">
+                <b id="rightHudPos">0.00&nbsp;&nbsp;0.00&nbsp;&nbsp;0.00</b>
+                <span class="bar"><i id="rightHudGrip"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="overlay start-overlay" id="startOverlay">
+            <div class="overlay-inner">
+              <p class="eyebrow">NVIDIA Cosmos3 <span>/</span> action-conditioned simulation</p>
+              <h2><span class="line">Move the arms.</span><span class="line quiet">The scene follows.</span></h2>
+              <p class="overlay-copy">A two-arm AgiBot world generated frame by frame from your poses and grips. The checkpoint runs on a B200 through Reactor; this whole client runs in your browser with your own API key.</p>
+              <div class="overlay-actions">
+                <button class="primary-btn" id="startBtn" type="button"><span class="label" id="startLabel">Start world</span><span class="arrow" aria-hidden="true">→</span></button>
+                <button class="link-btn" id="startAboutBtn" type="button">What am I looking at?</button>
+              </div>
+              <p class="overlay-fine">$0.102 per minute <span>·</span> auto-stops at 5:00 <span>·</span> bring your own Reactor key</p>
+              <p class="form-error" id="startError" role="alert"></p>
+            </div>
+          </div>
+
+          <div class="overlay ended-overlay" id="endedOverlay" hidden>
+            <div class="overlay-inner">
+              <p class="eyebrow" id="endedEyebrow">Session closed</p>
+              <h2><span class="line" id="endedTitle">World paused.</span></h2>
+              <p class="overlay-copy" id="endedCopy">Start another world when you want to keep exploring.</p>
+              <div class="overlay-actions">
+                <button class="primary-btn" id="restartBtn" type="button"><span class="label">Start a new world</span><span class="arrow" aria-hidden="true">→</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+
+        <div class="dock">
+          <div class="dock-row">
+            <div class="mode-group" role="tablist" aria-label="Control mode">
+              <span class="dock-label">Control</span>
+              <button class="mode-btn is-active" data-mode="pointer" type="button" role="tab" aria-selected="true">Pointer</button>
+              <button class="mode-btn" data-mode="hands" type="button" role="tab" aria-selected="false">Hands</button>
+              <button class="mode-btn" data-mode="gamepad" type="button" role="tab" aria-selected="false">Gamepad</button>
+            </div>
+            <div class="transport">
+              <button class="transport-btn" id="pauseBtn" type="button" disabled>Pause</button>
+              <button class="transport-btn" id="resetBtn" type="button" disabled>Reset pose</button>
+              <button class="transport-btn" id="recenterBtn" type="button" disabled>Recenter</button>
+              <button class="transport-btn" id="snapBtn" type="button" disabled>Save frame</button>
+              <button class="transport-btn record" id="recordBtn" type="button" disabled><i aria-hidden="true"></i><span class="label">Record</span></button>
+              <button class="transport-btn danger" id="stopBtn" type="button" disabled>Stop</button>
+            </div>
+          </div>
+
+          <div class="mode-panel">
+            <div class="mode-help" id="pointerHelp">
+              <p><b>Drag</b> in the world to move the selected arm. <b>Click</b> to toggle its grip. <b>Scroll</b> or <b>shift-drag</b> for depth. Switch arms with <b>1</b> and <b>2</b>.</p>
+              <div class="axis-readout"><span>X <b id="padX">0.00</b></span><span>Y <b id="padY">0.00</b></span><span>Z <b id="padZ">0.00</b></span></div>
+            </div>
+
+            <div class="mode-help hands-help" id="handsHelp" hidden>
+              <div class="camera-wrap">
+                <video id="cameraVideo" playsinline muted></video>
+                <canvas id="handCanvas" width="320" height="240"></canvas>
+                <div class="camera-idle" id="cameraIdle">Camera off</div>
+              </div>
+              <div class="hands-copy">
+                <p>Mirror your hands. Each wrist drives an arm, and pinching thumb to index closes that gripper.</p>
+                <div class="hands-actions">
+                  <button class="small-btn" id="cameraBtn" type="button">Enable camera</button>
+                  <button class="small-btn" id="neutralBtn" type="button" disabled>Set neutral</button>
+                  <button class="small-btn" id="swapHandsBtn" type="button" disabled>Swap L/R</button>
+                </div>
+                <p class="tiny" id="handStatus">Hand tracking loads in this browser, not on the GPU.</p>
+              </div>
+            </div>
+
+            <div class="mode-help gamepad-help" id="gamepadHelp" hidden>
+              <p><b>Left stick</b> and <b>right stick</b> move the arms. <b>LT / RT</b> close the grippers. <b>D-pad up / down</b> lifts or lowers both arms. <b>LB / RB</b> select an arm.</p>
+              <p class="tiny" id="gamepadStatus">No gamepad detected. Press a button on the controller to wake it.</p>
+              <div class="axis-readout"><span>LX <b id="lx">0.00</b></span><span>LY <b id="ly">0.00</b></span><span>RX <b id="rx">0.00</b></span><span>RY <b id="ry">0.00</b></span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="console">
+        <section class="panel world-panel">
+          <div class="panel-title"><h3>World</h3><span id="worldState">idle</span></div>
+          <label class="field-label" for="promptInput">Task prompt</label>
+          <textarea id="promptInput" maxlength="800" rows="3">Move both robot arms carefully over the table.</textarea>
+          <div class="preset-grid" id="presets"></div>
+          <div class="world-actions">
+            <label class="seed-field">Seed <input id="seedInput" type="number" min="0" max="2147483647" value="42" inputmode="numeric"></label>
+            <button class="small-btn is-strong" id="applyBtn" type="button">Restart world</button>
+          </div>
+          <div class="image-row">
+            <button class="small-btn" id="imageBtn" type="button">Replace frame</button>
+            <input id="imageInput" type="file" accept="image/png,image/jpeg" hidden>
+            <span class="tiny" id="imageName">agibot.png</span>
+          </div>
+          <p class="panel-note">Changing the prompt or starting frame restarts the world. This is a visual prediction, not a physics engine.</p>
+        </section>
+
+        <section class="panel arm-panel is-selected" id="leftPanel" data-arm="left">
+          <div class="panel-title">
+            <h3><span class="arm-dot"></span>Left arm</h3>
+            <span class="arm-select">selected</span>
+          </div>
+          <div class="pad" id="leftPad" data-arm="left">
+            <span class="pad-axis axis-x">X</span><span class="pad-axis axis-y">Y</span>
+            <span class="pad-cross x" aria-hidden="true"></span><span class="pad-cross y" aria-hidden="true"></span>
+            <span class="pad-dot" id="leftDot"></span>
+          </div>
+          <div class="slider-row">
+            <label for="leftZ">Z depth</label>
+            <input id="leftZ" type="range" min="-0.18" max="0.18" step="0.005" value="0">
+            <output id="leftZOut">0.00 m</output>
+          </div>
+          <div class="grip-row">
+            <label for="leftGrip">Grip</label>
+            <input id="leftGrip" type="range" min="0" max="1" step="0.01" value="0">
+            <output id="leftGripOut">open</output>
+            <button class="grip-toggle" type="button" data-arm="left">Toggle</button>
+          </div>
+        </section>
+
+        <section class="panel arm-panel" id="rightPanel" data-arm="right">
+          <div class="panel-title">
+            <h3><span class="arm-dot"></span>Right arm</h3>
+            <span class="arm-select">selected</span>
+          </div>
+          <div class="pad" id="rightPad" data-arm="right">
+            <span class="pad-axis axis-x">X</span><span class="pad-axis axis-y">Y</span>
+            <span class="pad-cross x" aria-hidden="true"></span><span class="pad-cross y" aria-hidden="true"></span>
+            <span class="pad-dot" id="rightDot"></span>
+          </div>
+          <div class="slider-row">
+            <label for="rightZ">Z depth</label>
+            <input id="rightZ" type="range" min="-0.18" max="0.18" step="0.005" value="0">
+            <output id="rightZOut">0.00 m</output>
+          </div>
+          <div class="grip-row">
+            <label for="rightGrip">Grip</label>
+            <input id="rightGrip" type="range" min="0" max="1" step="0.01" value="0">
+            <output id="rightGripOut">open</output>
+            <button class="grip-toggle" type="button" data-arm="right">Toggle</button>
+          </div>
+        </section>
+
+        <section class="panel session-panel">
+          <div class="panel-title"><h3>Session</h3><span id="sessionState">not started</span></div>
+          <div class="meter-grid">
+            <div><span>Elapsed</span><b id="elapsed">00:00</b></div>
+            <div><span>Spend</span><b id="spend">$0.000</b></div>
+            <div><span>Model steps</span><b id="stepStat">0</b></div>
+            <div><span>Frames in</span><b id="frameStat">0</b></div>
+          </div>
+          <div class="session-bar"><i id="sessionProgress"></i></div>
+          <p class="panel-note">Billed by Reactor per second of GPU time, to your account. The client closes the session at 5:00 and when you press Stop. Your key stays in this tab's memory.</p>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="footer">
+      <span>Cosmos3 Nano Sim Bimanual <b>0.2.0</b></span>
+      <span>AgiBot embodiment <span>·</span> 640×352 generated stream</span>
+      <span class="footer-right"><a href="https://github.com/Jay-Aditya-16/cosmos-bimanual" target="_blank" rel="noreferrer">Source</a> <span>·</span> Reactor JS SDK <span>·</span> static client</span>
+    </footer>
+  </div>
+
+  <dialog class="about-dialog key-dialog" id="keyDialog">
+    <form id="keyForm" novalidate>
+      <div class="dialog-head">
+        <p class="eyebrow">Reactor access</p>
+        <button class="close-btn" id="closeKey" type="button" aria-label="Close">×</button>
+      </div>
+      <h2>Bring your own key.</h2>
+      <p>Paste a Reactor API key with access to Cosmos3 Nano Sim Bimanual. This page exchanges it directly with <code>api.reactor.inc</code> for a short-lived token that can create one session.</p>
+      <label class="field-label" for="apiKeyInput">Reactor API key</label>
+      <div class="key-input-row">
+        <input id="apiKeyInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="rk_..." aria-describedby="keyWarning">
+        <button class="small-btn" id="toggleKey" type="button">Show</button>
+      </div>
+      <p class="form-error key-error" id="keyError" role="alert"></p>
+      <div class="key-warning" id="keyWarning">
+        <b>Keep it private.</b> The key is held in this tab's memory only. It is sent to Reactor to mint a scoped token, never to this site's host, and is not stored. Anyone with the key can spend your Reactor credits.
+      </div>
+      <div class="key-actions">
+        <button class="link-btn key-forget" id="forgetKey" type="button">Forget key</button>
+        <button class="primary-btn key-submit" id="keySubmit" type="submit"><span class="label" id="keySubmitLabel">Use key</span><span class="arrow" aria-hidden="true">→</span></button>
+      </div>
+      <p class="dialog-fine">Create a key in the <a href="https://reactor.inc" target="_blank" rel="noreferrer">Reactor dashboard</a>. Model access is evaluated by Reactor; contact team@reactor.inc if a session is refused.</p>
+    </form>
+  </dialog>
+
+  <dialog class="about-dialog" id="aboutDialog">
+    <div class="dialog-head">
+      <p class="eyebrow">Field notes</p>
+      <button class="close-btn" id="closeAbout" type="button" aria-label="Close">×</button>
+    </div>
+    <h2>A world model, not a simulator.</h2>
+    <p>Cosmos3 Nano Sim Bimanual is NVIDIA's action-conditioned world model for a two-arm AgiBot. You give it a starting image, a task prompt, and calibrated controller poses. It generates the next frames of the scene. The controller is the client; the model predicts what the scene looks like as those controllers move.</p>
+    <div class="dialog-grid">
+      <div><span>Hosted on</span><b>1× NVIDIA B200</b></div>
+      <div><span>Client</span><b>Static browser app</b></div>
+      <div><span>Price</span><b>$0.102 / minute</b></div>
+      <div><span>Session cap</span><b>5 minutes</b></div>
+    </div>
+    <h3>What to expect</h3>
+    <ul>
+      <li>This is visual prediction. It does not expose physics state, collision checks, or task success scores.</li>
+      <li>Poses are approximate and live in a calibrated tracking space. They are not robot joint angles.</li>
+      <li>The AgiBot checkpoint supports AgiBot starting scenes. Other robots are not supported by swapping the image.</li>
+      <li>Frames can repeat or drop. Preview frames are not a synchronized action-to-observation benchmark.</li>
+      <li>Prompts guide appearance and context. Arm motion comes from the controller, not the text.</li>
+    </ul>
+    <h3>Controls</h3>
+    <p><b>Pointer:</b> drag, click, scroll. <b>Hands:</b> webcam wrist tracking and pinch grips. <b>Gamepad:</b> two sticks, triggers, D-pad. Keyboard: <b>1/2</b> arm, <b>G</b> grip, <b>Space</b> pause, <b>R</b> reset, <b>C</b> recenter, <b>P</b> save frame.</p>
+    <p class="dialog-fine">Your API key never reaches GitHub or this page's host. The browser sends it only to Reactor's token endpoint, then holds the resulting scoped JWT for the session. GitHub Pages serves the HTML and does not see the key.</p>
+    <div class="dialog-actions"><button class="small-btn is-strong" id="dialogDone" type="button">Back to the world</button></div>
+  </dialog>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "cosmos-bimanual",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A bring-your-own-key browser client for NVIDIA Cosmos3 Nano Sim Bimanual on Reactor",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jay-Aditya-16/cosmos-bimanual.git"
+  },
+  "homepage": "https://jay-aditya-16.github.io/cosmos-bimanual/",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@reactor-team/js-sdk": "3.3.0"
+  },
+  "devDependencies": {
+    "vite": "7.1.12"
+  }
+}
