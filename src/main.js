@@ -168,6 +168,7 @@ const app = {
     sampleCanvas: null,
   },
   lastStatsAt: 0,
+  lastPauseToggleAt: 0,
   poster: "",
   hands: {
     stream: null,
@@ -433,6 +434,7 @@ function resetForStart() {
   app.paused = false;
   app.ready = false;
   app.lastStatsAt = 0;
+  app.lastPauseToggleAt = 0;
   app.lastPrompt = currentPrompt();
   els.stage.classList.remove("has-frame", "is-live", "is-warming", "is-ended");
   els.endedOverlay.hidden = true;
@@ -537,7 +539,9 @@ function bindReactor(reactor) {
       app.sim = message.data;
       if (Number.isFinite(Number(message.data.step_index))) app.step = Number(message.data.step_index);
       if (Number.isFinite(Number(message.data.frame_index))) app.frameIndex = Number(message.data.frame_index);
-      if (typeof message.data.paused === "boolean") app.paused = message.data.paused;
+      if (typeof message.data.paused === "boolean" && performance.now() - app.lastPauseToggleAt > 3000) {
+        app.paused = message.data.paused;
+      }
       if (app.ready && app.frames.hasFrame) {
         app.status = app.paused ? "paused" : "live";
       }
@@ -757,10 +761,21 @@ function recenterArms() {
 
 function togglePause() {
   if (!app.ready || !app.reactor) return;
+  const reactor = app.reactor;
   app.paused = !app.paused;
+  app.lastPauseToggleAt = performance.now();
   app.status = app.paused ? "paused" : "live";
   updateUI();
-  app.reactor.sendCommand("set_paused", { paused: app.paused });
+  const target = app.paused;
+  void reactor.sendCommand("set_paused", { paused: target }).catch((error) => {
+    if (app.paused === target) {
+      app.paused = !target;
+      app.lastPauseToggleAt = 0;
+      app.status = app.paused ? "paused" : "live";
+      updateUI();
+    }
+    showToast(errorText(error), "error");
+  });
 }
 
 async function applyImage(file) {
