@@ -904,13 +904,17 @@ input[type="range"]::-moz-range-thumb { width: 11px; height: 11px; border: 1px s
   .topbar-meta { width: 100%; flex-wrap: wrap; gap: 10px 14px; }
   .meta-block b { max-width: 230px; }
   .workspace { padding: 12px 12px 0; gap: 12px; }
-  .overlay { padding: 26px; align-items: flex-end; background: linear-gradient(0deg, rgba(6,14,10,.97) 0%, rgba(6,14,10,.68) 60%, rgba(6,14,10,.3) 100%); }
-  .overlay h2 { font-size: clamp(37px, 12vw, 55px); }
+  .overlay { padding: 18px; align-items: flex-end; background: linear-gradient(0deg, rgba(6,14,10,.97) 0%, rgba(6,14,10,.68) 60%, rgba(6,14,10,.3) 100%); }
+  .overlay h2 { font-size: clamp(30px, 9vw, 40px); line-height: 1.02; }
+  .start-overlay .eyebrow { margin-bottom: 8px; }
+  .start-overlay h2 .quiet,
+  .start-overlay .overlay-copy { display: none; }
   .key-dialog .dialog-fine { font-size: 9px !important; }
-  .overlay-copy { margin-top: 16px; font-size: 12px; }
-  .overlay-actions { margin-top: 20px; gap: 12px; }
-  .primary-btn { min-width: 180px; }
-  .overlay-fine { font-size: 8px; }
+  .overlay-copy { margin-top: 8px; font-size: 11px; line-height: 1.45; }
+  .overlay-actions { margin-top: 12px; gap: 10px; }
+  .primary-btn { min-width: 0; padding-inline: 18px; }
+  .overlay-fine { margin-top: 8px; font-size: 8px; }
+  .form-error { margin-top: 6px; min-height: 0; }
   .top-hud { top: 18px; left: 20px; right: 20px; }
   .bottom-hud { bottom: 17px; left: 20px; right: 20px; }
   .dock-row { align-items: flex-start; flex-direction: column; gap: 8px; }
